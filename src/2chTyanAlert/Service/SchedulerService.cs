@@ -52,7 +52,6 @@ namespace _2chTyanAlert.Service
                     }
 
                     using var scope = _serviceProvider.CreateScope();
-                    var alert = scope.ServiceProvider.GetRequiredService<AlertService>();
                     var api2ChService = scope.ServiceProvider.GetRequiredService<Api2chService>();
                     var threadId = await api2ChService.ExtractSocThreadIdAsync();
                     var since = DateTime.UtcNow - _interval;

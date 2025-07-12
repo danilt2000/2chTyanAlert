@@ -1,7 +1,6 @@
 
 using _2chTyanAlert.Service;
 using GenerativeAI;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace _2chTyanAlert
 {
@@ -18,7 +17,6 @@ namespace _2chTyanAlert
             builder.Services.AddSwaggerGen();
             builder.Services.AddHostedService<SchedulerService>();
             builder.Services.AddScoped<Api2chService>();
-            builder.Services.AddScoped<AlertService>();
             builder.Services.AddSingleton<IGenerativeModel>(_ =>
             {
                 var apiKey = builder.Configuration["Gemini:ApiKey"];
