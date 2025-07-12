@@ -16,20 +16,44 @@ namespace _2chTyanAlert.Service
 
         public async Task<string> ExtractSocThreadIdAsync()
         {
-            var json = await _httpClient.GetStringAsync($"{BaseUri}/soc/index.json");
-            //var test = await _httpClient.GetStringAsync($"{BaseUri}");
-            using var doc = JsonDocument.Parse(json);
-            var threadNum = doc.RootElement
-                .GetProperty("threads")[1]
-                .GetProperty("thread_num")
-                .GetInt32();
+            const int maxRetries = 5;
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    var json = await _httpClient.GetStringAsync($"{BaseUri}/soc/index.json");
+                    using var doc = JsonDocument.Parse(json);
+                    var threadNum = doc.RootElement
+                        .GetProperty("threads")[1]
+                        .GetProperty("thread_num")
+                        .GetInt32();
+                    return threadNum.ToString();
+                }
+                catch (HttpRequestException) when (attempt < maxRetries)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+                }
+            }
 
-            return threadNum.ToString();
+            throw new HttpRequestException($"Failed to fetch thread ID after {maxRetries} retries.");
         }
 
         public async Task<string> FetchThreadJsonAsync(string threadId)
         {
-            return await _httpClient.GetStringAsync($"{BaseUri}/soc/res/{threadId}.json");
+            const int maxRetries = 5;
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    return await _httpClient.GetStringAsync($"{BaseUri}/soc/res/{threadId}.json");
+                }
+                catch (HttpRequestException) when (attempt < maxRetries)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+                }
+            }
+
+            throw new HttpRequestException($"Failed to fetch thread JSON after {maxRetries} retries.");
         }
 
         //public async Task<IReadOnlyList<SocPost>> FetchPostsSinceAsync(string threadId, DateTime utcSince)
