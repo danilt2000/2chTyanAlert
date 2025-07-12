@@ -55,6 +55,7 @@ namespace _2chTyanAlert.Service
                     var api2ChService = scope.ServiceProvider.GetRequiredService<Api2chService>();
                     var threadId = await api2ChService.ExtractSocThreadIdAsync();
                     var since = DateTime.UtcNow - _interval;
+                    await Task.Delay(TimeSpan.FromSeconds(60));
                     var posts = await api2ChService.FetchPostsSinceAsync(threadId, since);
 
                     var geminiPosts = posts.ToGeminiFilterPrompt();

@@ -17,6 +17,7 @@ namespace _2chTyanAlert.Service
         public async Task<string> ExtractSocThreadIdAsync()
         {
             var json = await _httpClient.GetStringAsync($"{BaseUri}/soc/index.json");
+            //var test = await _httpClient.GetStringAsync($"{BaseUri}");
             using var doc = JsonDocument.Parse(json);
             var threadNum = doc.RootElement
                 .GetProperty("threads")[1]
