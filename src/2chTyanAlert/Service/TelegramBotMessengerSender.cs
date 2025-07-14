@@ -20,20 +20,18 @@ namespace _2chTyanAlert.Service
             using var client = new HttpClient();
             foreach (var post in posts)
             {
-                if (post.imageUrls == null || !post.imageUrls.Any())
+                try
                 {
-                    // Если картинок нет — просто текст
-                    await SendTextOnlyAsync(client, post);
+                    if (post.imageUrls == null || !post.imageUrls.Any())
+                        await SendTextOnlyAsync(client, post);
+                    else if (post.imageUrls.Count == 1)
+                        await SendSinglePhotoAsync(client, post, post.imageUrls[0]);
+                    else
+                        await SendMediaGroupAsync(client, post, post.imageUrls);
                 }
-                else if (post.imageUrls.Count == 1)
+                catch (Exception ex)
                 {
-                    // Одна картинка
-                    await SendSinglePhotoAsync(client, post, post.imageUrls[0]);
-                }
-                else
-                {
-                    // Несколько картинок
-                    await SendMediaGroupAsync(client, post, post.imageUrls);
+                    Console.Error.WriteLine($"[Error] post #{post.Num}: {ex.GetType().Name}: {ex.Message}");
                 }
             }
         }
@@ -62,23 +60,32 @@ namespace _2chTyanAlert.Service
                 parse_mode = "MarkdownV2"
             };
             var url = $"https://api.telegram.org/bot{_botToken}/sendPhoto";
-            await PostJsonAsync(client, url, payload);
+
+            try
+            {
+                await PostJsonAsync(client, url, payload);
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.Error.WriteLine($"[BadRequest] sendPhoto failed: {ex.Message}");
+                var photoOnly = new { chat_id = _chatId, photo = photoUrl };
+                await PostJsonAsync(client, url, photoOnly);
+
+                await SendTextOnlyAsync(client, post);
+            }
         }
 
         private async Task SendMediaGroupAsync(HttpClient client, SocPost post, List<string> urls)
         {
-            // в массиве media только первый элемент получает caption
             var media = urls
                 .Select((u, i) => new Dictionary<string, object>
                 {
                     ["type"] = "photo",
                     ["media"] = u,
-                    // caption только для первого изображения
-                    [i == 0 ? "caption" : ""] = i == 0 ? EscapeMarkdown(BuildCaption(post)) : null,
-                    [i == 0 ? "parse_mode" : ""] = i == 0 ? "MarkdownV2" : null
+                    ["caption"] = i == 0 ? EscapeMarkdown(BuildCaption(post)) : null!,
+                    ["parse_mode"] = i == 0 ? "MarkdownV2" : null!
                 })
-                // отфильтровываем пустые ключи
-                .Select(d => d.Where(kv => !string.IsNullOrEmpty(kv.Key))
+                .Select(d => d.Where(kv => kv.Value != null)
                               .ToDictionary(kv => kv.Key, kv => kv.Value!))
                 .ToArray();
 
@@ -87,16 +94,12 @@ namespace _2chTyanAlert.Service
                 chat_id = _chatId,
                 media = media
             };
-
             var url = $"https://api.telegram.org/bot{_botToken}/sendMediaGroup";
             await PostJsonAsync(client, url, payload);
         }
 
         private static string BuildCaption(SocPost post)
         {
-            // Форматируем: номер, очки и исходный HTML-комментарий
-            // Если в Comment есть теги <a>, Telegram их не отобразит под MarkdownV2,
-            // поэтому либо экранируем, либо предварительно конвертим в plain text.
             return $"Post #{post.Num} (score: {post.Score})\n{post.Comment}";
         }
 
@@ -105,21 +108,28 @@ namespace _2chTyanAlert.Service
             var json = JsonSerializer.Serialize(payload);
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
             var resp = await client.PostAsync(url, content);
-            resp.EnsureSuccessStatusCode();
+            var body = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(
+                    $"HTTP {(int)resp.StatusCode} ({resp.StatusCode}) from Telegram. " +
+                    $"Response body: {body}"
+                );
+            }
         }
 
         private static string EscapeMarkdown(string text)
         {
             if (string.IsNullOrEmpty(text)) return "";
-            var builder = new StringBuilder(text.Length);
+            var sb = new StringBuilder(text.Length);
             foreach (var ch in text)
             {
-                // список символов, обязательных к экранированию в MarkdownV2
-                if ("_*[]()~`>#+-=|{}.!".Contains(ch))
-                    builder.Append('\\');
-                builder.Append(ch);
+                if ("_*[]()~`>#+\\-=|{}.!".Contains(ch))
+                    sb.Append('\\');
+                sb.Append(ch);
             }
-            return builder.ToString();
+            return sb.ToString();
         }
     }
 }
