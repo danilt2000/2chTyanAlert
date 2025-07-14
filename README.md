@@ -10,6 +10,10 @@
   <img width="575" height="950" alt="telegram example" src="https://github.com/user-attachments/assets/dd998c49-9ac3-4de6-be17-4ac05ffb1662" />
 </p>
 
+<p align="center">
+  <img  alt="telegram example" src="https://github.com/user-attachments/assets/dbf7be98-41b8-4abf-b047-b80d9d60d48d" />
+</p>
+
 ## Используемая модель: Gemini 2.5 Flash
 
 **Цены (июль 2025):**

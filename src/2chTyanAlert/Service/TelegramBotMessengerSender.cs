@@ -4,16 +4,10 @@ using System.Text.Json;
 
 namespace _2chTyanAlert.Service
 {
-    public class TelegramBotMessengerSender
+    public class TelegramBotMessengerSender(IConfiguration configuration)
     {
-        private readonly string _botToken;
-        private readonly string _chatId;
-
-        public TelegramBotMessengerSender(IConfiguration configuration)
-        {
-            _botToken = configuration.GetValue<string>("TelegramBotToken")!;
-            _chatId = configuration.GetValue<string>("TelegramChatId")!;
-        }
+        private readonly string _botToken = configuration.GetValue<string>("TelegramBotToken")!;
+        private readonly string _chatId = configuration.GetValue<string>("TelegramChatId")!;
 
         public async Task SendPostsAsync(IEnumerable<SocPost> posts)
         {
@@ -31,7 +25,7 @@ namespace _2chTyanAlert.Service
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"[Error] post #{post.Num}: {ex.GetType().Name}: {ex.Message}");
+                    await Console.Error.WriteLineAsync($"[Error] post #{post.Num}: {ex.GetType().Name}: {ex.Message}");
                 }
             }
         }
@@ -67,7 +61,7 @@ namespace _2chTyanAlert.Service
             }
             catch (HttpRequestException ex)
             {
-                Console.Error.WriteLine($"[BadRequest] sendPhoto failed: {ex.Message}");
+                await Console.Error.WriteLineAsync($"[BadRequest] sendPhoto failed: {ex.Message}");
                 var photoOnly = new { chat_id = _chatId, photo = photoUrl };
                 await PostJsonAsync(client, url, photoOnly);
 
@@ -83,7 +77,7 @@ namespace _2chTyanAlert.Service
                     ["type"] = "photo",
                     ["media"] = u,
                     ["caption"] = i == 0 ? EscapeMarkdown(BuildCaption(post)) : null!,
-                    ["parse_mode"] = i == 0 ? "MarkdownV2" : null!
+                    ["parse_mode"] = i == 0 ? "HTML" : null!
                 })
                 .Select(d => d.Where(kv => kv.Value != null)
                               .ToDictionary(kv => kv.Key, kv => kv.Value!))
