@@ -4,10 +4,16 @@ using System.Text.Json;
 
 namespace _2chTyanAlert.Service
 {
-    public class TelegramBotMessengerSender(IConfiguration configuration)
+    public class TelegramBotMessengerSender
     {
-        private readonly string _botToken = configuration.GetValue<string>("TelegramBotToken")!;
-        private readonly string _chatId = configuration.GetValue<string>("TelegramChatId")!;
+        private readonly string _botToken;
+        private readonly string _chatId;
+
+        public TelegramBotMessengerSender(IConfiguration configuration)
+        {
+            _botToken = configuration.GetValue<string>("TelegramBotToken")!;
+            _chatId = configuration.GetValue<string>("TelegramChatId")!;
+        }
 
         public async Task SendPostsAsync(IEnumerable<SocPost> posts)
         {
@@ -64,20 +70,21 @@ namespace _2chTyanAlert.Service
                 await Console.Error.WriteLineAsync($"[BadRequest] sendPhoto failed: {ex.Message}");
                 var photoOnly = new { chat_id = _chatId, photo = photoUrl };
                 await PostJsonAsync(client, url, photoOnly);
-
                 await SendTextOnlyAsync(client, post);
             }
         }
 
         private async Task SendMediaGroupAsync(HttpClient client, SocPost post, List<string> urls)
         {
+            var caption = BuildCaption(post);
+            var escaped = EscapeMarkdown(caption);
             var media = urls
                 .Select((u, i) => new Dictionary<string, object>
                 {
                     ["type"] = "photo",
                     ["media"] = u,
-                    ["caption"] = i == 0 ? EscapeMarkdown(BuildCaption(post)) : null!,
-                    ["parse_mode"] = i == 0 ? "HTML" : null!
+                    ["caption"] = i == 0 ? escaped : null!,
+                    ["parse_mode"] = i == 0 ? "MarkdownV2" : null!
                 })
                 .Select(d => d.Where(kv => kv.Value != null)
                               .ToDictionary(kv => kv.Key, kv => kv.Value!))
@@ -115,7 +122,7 @@ namespace _2chTyanAlert.Service
 
         private static string EscapeMarkdown(string text)
         {
-            if (string.IsNullOrEmpty(text)) return "";
+            if (string.IsNullOrEmpty(text)) return string.Empty;
             var sb = new StringBuilder(text.Length);
             foreach (var ch in text)
             {
