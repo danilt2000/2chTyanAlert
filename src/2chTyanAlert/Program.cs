@@ -20,7 +20,7 @@ namespace _2chTyanAlert
             builder.Services.AddSingleton<IGenerativeModel>(_ =>
             {
                 var apiKey = builder.Configuration["Gemini:ApiKey"];
-                return new GenerativeModel(apiKey!, "gemini-2.5-flash");
+                return new GenerativeModel(apiKey!, "gemini-2.0-flash");
             });
             builder.Services.AddSingleton<GeminiApiService>();
             builder.Services.AddSingleton<TelegramBotMessengerSender>();
