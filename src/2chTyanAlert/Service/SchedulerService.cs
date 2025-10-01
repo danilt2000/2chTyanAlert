@@ -60,7 +60,15 @@ namespace _2chTyanAlert.Service
 
                     var geminiPosts = posts.ToGeminiFilterPrompt();
                     var raw = await _geminiApiService.SummarizeAsync(geminiPosts);
-                    var selected = JsonSerializer.Deserialize<List<SelectedPost>>(CleanJson(raw))!;
+                    var cleanedJson = CleanJson(raw);
+
+                    if (string.IsNullOrWhiteSpace(cleanedJson) || cleanedJson.TrimStart().StartsWith('<'))
+                    {
+                        _logger.LogError("Invalid response from Gemini API. Response starts with HTML or is empty: {response}", raw.Length > 200 ? raw.Substring(0, 200) : raw);
+                        continue;
+                    }
+
+                    var selected = JsonSerializer.Deserialize<List<SelectedPost>>(cleanedJson)!;
                     var finalPosts = posts
                         .Join(
                             selected,
