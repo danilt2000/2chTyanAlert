@@ -6,7 +6,7 @@ namespace _2chTyanAlert.Service
     public class Api2chService
     {
         private readonly HttpClient _httpClient;
-        private const string BaseUri = "https://2ch.hk";
+        private const string BaseUri = "https://2ch.su";
 
 
         public Api2chService(IConfiguration config)
