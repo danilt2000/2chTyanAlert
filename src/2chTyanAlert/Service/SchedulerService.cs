@@ -1,6 +1,8 @@
 ﻿using _2chTyanAlert.Helpers;
 using _2chTyanAlert.Models;
 using System.Text.Json;
+using _2chTyanAlert.Mapper;
+using GenerativeAI.Types;
 
 namespace _2chTyanAlert.Service
 {
@@ -78,12 +80,14 @@ namespace _2chTyanAlert.Service
                                 p.Num,
                                 p.Comment,
                                 p.Timestamp,
-                                p.imageUrls,
-                                s.score
+                                p.ImageUrls,
+                                s.score, false
                             )
                         )
                         .OrderByDescending(p => p.Score)
                         .ToList();
+
+                    finalPosts = SocPostMapper.MapWithTopTyan(finalPosts);
 
                     await _telegramBotMessengerSender.SendPostsAsync(finalPosts);
                     _logger.LogInformation("AlertService executed at {time}.", DateTimeOffset.Now);

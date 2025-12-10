@@ -4,6 +4,7 @@ public record SocPost(
     int Num,
     string Comment,
     long Timestamp,
-    List<string>? imageUrls,
-    int? Score
+    List<string>? ImageUrls,
+    int? Score,
+    bool IsTopTyan
 );

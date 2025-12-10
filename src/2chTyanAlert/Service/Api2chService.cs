@@ -95,7 +95,7 @@ namespace _2chTyanAlert.Service
                             .ToList()
                         : new List<string>();
 
-                    return new SocPost(num, comment, timestamp, imageUrls, null);
+                    return new SocPost(num, comment, timestamp, imageUrls, null, false);
                 })
                 .Where(post => DateTimeOffset
                     .FromUnixTimeSeconds(post.Timestamp)

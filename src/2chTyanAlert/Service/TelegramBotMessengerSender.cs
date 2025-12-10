@@ -22,12 +22,12 @@ namespace _2chTyanAlert.Service
             {
                 try
                 {
-                    if (post.imageUrls == null || !post.imageUrls.Any())
+                    if (post.ImageUrls == null || !post.ImageUrls.Any())
                         await SendTextOnlyAsync(client, post);
-                    else if (post.imageUrls.Count == 1)
-                        await SendSinglePhotoAsync(client, post, post.imageUrls[0]);
+                    else if (post.ImageUrls.Count == 1)
+                        await SendSinglePhotoAsync(client, post, post.ImageUrls[0]);
                     else
-                        await SendMediaGroupAsync(client, post, post.imageUrls);
+                        await SendMediaGroupAsync(client, post, post.ImageUrls);
                 }
                 catch (Exception ex)
                 {
@@ -101,7 +101,7 @@ namespace _2chTyanAlert.Service
 
         private static string BuildCaption(SocPost post)
         {
-            return $"Post #{post.Num} (score: {post.Score})\n{post.Comment}";
+            return $"Post #{post.Num} (score: {post.Score}) {(post.IsTopTyan ? "(⭐ ТОПОВАЯ ТЯН ⭐)" : "")} \n{post.Comment}";
         }
 
         private static async Task PostJsonAsync(HttpClient client, string url, object payload)
